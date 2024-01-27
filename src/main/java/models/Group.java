@@ -1,6 +1,8 @@
 package models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -21,6 +23,7 @@ public class Group {
     private Integer id;
 
     @Column(name = "group_name")
+    @NotBlank(message = "You should write group name")
     private String name;
     @CreationTimestamp
     @Column(name = "created_at", insertable = true)

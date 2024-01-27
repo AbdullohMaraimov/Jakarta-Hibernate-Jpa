@@ -6,10 +6,16 @@ import jakarta.persistence.Persistence;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import models.Group;
 import models.Student;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Set;
 
 @WebServlet(name = "StudentUpdateServlet", urlPatterns = "/student/update/*")
 public class StudentUpdateServlet extends HttpServlet {
@@ -40,16 +46,29 @@ public class StudentUpdateServlet extends HttpServlet {
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("orm_example");
         EntityManager entityManager = entityManagerFactory.createEntityManager();
 
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        Validator validator = validatorFactory.getValidator();
+
         entityManager.getTransaction().begin();
 
         Student student = entityManager.find(Student.class, id);
         groupId = student.getGroupId();
         student.setFullName(studentName);
         student.setAge(studentAge);
-        entityManager.merge(student);
 
-        entityManager.getTransaction().commit();
+        Set<ConstraintViolation<Student>> validate = validator.validate(student);
+        if (validate.size() == 0) {
+            entityManager.merge(student);
+            entityManager.getTransaction().commit();
+            response.sendRedirect("/group/student/" + groupId);
+        } else {
+            for (ConstraintViolation<Student> violation : validate) {
+                PrintWriter writer = response.getWriter();
 
-        response.sendRedirect("/group/student/" + groupId);
+                writer.write(violation.getMessage());
+            }
+        }
+
+
     }
 }

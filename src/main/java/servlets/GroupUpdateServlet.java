@@ -7,10 +7,16 @@ import jakarta.persistence.Persistence;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import models.Group;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.*;
+import java.util.Set;
 
 @WebServlet(name = "GroupUpdateServlet", urlPatterns = "/group/update/*")
 public class GroupUpdateServlet extends HttpServlet {
@@ -74,15 +80,28 @@ public class GroupUpdateServlet extends HttpServlet {
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("orm_example");
         EntityManager entityManager = entityManagerFactory.createEntityManager();
 
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        Validator validator = validatorFactory.getValidator();
+
         entityManager.getTransaction().begin();
 
         Group group = entityManager.find(Group.class, id);
         group.setName(groupName);
-        entityManager.merge(group);
 
-        entityManager.getTransaction().commit();
+        Set<ConstraintViolation<Group>> validate = validator.validate(group);
+        if (validate.size() == 0) {
+            entityManager.merge(group);
+            entityManager.getTransaction().commit();
+            response.sendRedirect("/");
+        } else {
+            for (ConstraintViolation<Group> violation : validate) {
+                PrintWriter writer = response.getWriter();
 
-        response.sendRedirect("/");
+                writer.println(violation.getMessage());
+            }
+        }
+
+
 
 
 
